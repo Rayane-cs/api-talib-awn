@@ -1,0 +1,9 @@
+bcrypt
+flask
+flask-jwt-extended
+flask-cors
+pymysql
+cryptography
+gunicorn
+email_validator
+flask-sqlalchemy
