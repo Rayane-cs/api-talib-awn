@@ -27,6 +27,8 @@ CORS(app, supports_credentials=True, origins=[
     "https://eloquent-duckanoo-1ec33a.netlify.app",
     "http://localhost:5000",
     "http://127.0.0.1:5000",
+    "http://127.0.0.1:5500",
+    "http://127.0.0.1:5501",
     "http://localhost:3000"
 ])
 jwt = JWTManager(app)
