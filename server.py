@@ -22,7 +22,7 @@ app = Flask(__name__)
 app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'talib-awn-secret-key-dev-2026')
 app.config['JWT_ACCESS_TOKEN_EXPIRES']  = timedelta(hours=8)
 app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=30)
-CORS(app, supports_credentials=True)
+CORS(app, supports_credentials=True, origins=["http://talib-awn.up.railway.app", "https://talib-awn.up.railway.app", "http://localhost:5000", "http://127.0.0.1:5000"])
 jwt = JWTManager(app)
 
 # ── Email config ─────────────────────────────────────────────────────────────
