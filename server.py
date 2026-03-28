@@ -24,8 +24,10 @@ app.config['JWT_ACCESS_TOKEN_EXPIRES']  = timedelta(hours=8)
 app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=30)
 CORS(app, supports_credentials=True, origins=[
     "https://talib-awn.netlify.app",
+    "https://eloquent-duckanoo-1ec33a.netlify.app",
     "http://localhost:5000",
-    "http://127.0.0.1:5000"
+    "http://127.0.0.1:5000",
+    "http://localhost:3000"
 ])
 jwt = JWTManager(app)
 
