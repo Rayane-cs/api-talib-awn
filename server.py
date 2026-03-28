@@ -10,7 +10,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from urllib.parse import urlparse
 import pymysql, pymysql.cursors
-from flask import Flask, request, jsonify, send_from_directory, send_file
+from flask import Flask, request, jsonify
 from flask_jwt_extended import (
     JWTManager, create_access_token, create_refresh_token,
     jwt_required, get_jwt_identity, verify_jwt_in_request
@@ -22,7 +22,11 @@ app = Flask(__name__)
 app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'talib-awn-secret-key-dev-2026')
 app.config['JWT_ACCESS_TOKEN_EXPIRES']  = timedelta(hours=8)
 app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=30)
-CORS(app, supports_credentials=True, origins=["http://talib-awn.up.railway.app", "https://talib-awn.up.railway.app", "http://localhost:5000", "http://127.0.0.1:5000"])
+CORS(app, supports_credentials=True, origins=[
+    "https://talib-awn.netlify.app",
+    "http://localhost:5000",
+    "http://127.0.0.1:5000"
+])
 jwt = JWTManager(app)
 
 # ── Email config ─────────────────────────────────────────────────────────────
@@ -394,7 +398,11 @@ def init_db():
 
 
 # Initialise on module load (works with gunicorn)
-init_db()
+try:
+    init_db()
+except Exception as e:
+    print(f"⚠️  Database init failed: {e}")
+    print("⚠️  Make sure DATABASE_URL is set in Railway environment variables!")
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -1305,16 +1313,12 @@ def my_demands():
 
 
 # ════════════════════════════════════════════════════════════════════════════
-#  STATIC FILES (serve frontend HTML/CSS/JS from root)
+#  HEALTHCHECK
 # ════════════════════════════════════════════════════════════════════════════
 
 @app.route('/')
-def index():
-    return send_file('index.html')
-
-@app.route('/<path:filename>')
-def static_files(filename):
-    return send_from_directory('.', filename)
+def health():
+    return jsonify({'ok': True, 'message': 'Talib-Awn API is running ✅'})
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -1322,5 +1326,6 @@ def static_files(filename):
 # ════════════════════════════════════════════════════════════════════════════
 
 if __name__ == '__main__':
-    print("🚀 Talib-Awn backend starting on port 5000...")
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    port = int(os.environ.get('PORT', 5000))
+    print(f"🚀 Talib-Awn backend starting on port {port}...")
+    app.run(host='0.0.0.0', port=port, debug=False)
