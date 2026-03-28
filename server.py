@@ -35,7 +35,7 @@ jwt = JWTManager(app)
 
 # ── Email config ─────────────────────────────────────────────────────────────
 GMAIL_ADDRESS   = os.environ.get('GMAIL_ADDRESS',  'universitychlefclub@gmail.com')
-GMAIL_APP_PASS  = os.environ.get('GMAIL_APP_PASS', 'rqki cvlk iqgr smdj')
+GMAIL_APP_PASS  = os.environ.get('GMAIL_APP_PASS', 'rqkicvlkiqgrsmdj')  # spaces stripped
 PLATFORM_NAME   = 'طالب عون | Talib Awn'
 LOGO_URL        = 'https://images.cdn-files-a.com/uploads/1598328/800_5bd38322bcdfd.jpg'
 OTP_EXPIRY_SEC  = 120   # 2 minutes
@@ -128,18 +128,34 @@ def rows_to_list(rows):
 
 def _send_email(to_email, subject, html):
     """Send an HTML email via Gmail SMTP (runs in background thread)."""
+    # Strip spaces from app password — Gmail UI shows spaces but SMTP needs them removed
+    _app_pass = GMAIL_APP_PASS.replace(' ', '')
+
     def _send():
+        msg = MIMEMultipart('alternative')
+        msg['From']    = f'{PLATFORM_NAME} <{GMAIL_ADDRESS}>'
+        msg['To']      = to_email
+        msg['Subject'] = subject
+        msg.attach(MIMEText(html, 'html'))
+
+        # Try SSL on port 465 first, fall back to STARTTLS on port 587
         try:
-            msg = MIMEMultipart('alternative')
-            msg['From']    = f'{PLATFORM_NAME} <{GMAIL_ADDRESS}>'
-            msg['To']      = to_email
-            msg['Subject'] = subject
-            msg.attach(MIMEText(html, 'html'))
-            with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
-                server.login(GMAIL_ADDRESS, GMAIL_APP_PASS)
+            with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=15) as server:
+                server.login(GMAIL_ADDRESS, _app_pass)
                 server.sendmail(GMAIL_ADDRESS, to_email, msg.as_string())
-        except Exception as e:
-            print(f'[EMAIL ERROR] {to_email}: {e}')
+            print(f'[EMAIL OK] {to_email} (SSL 465)')
+        except Exception as e1:
+            print(f'[EMAIL] SSL 465 failed ({e1}), trying STARTTLS 587...')
+            try:
+                with smtplib.SMTP('smtp.gmail.com', 587, timeout=15) as server:
+                    server.ehlo()
+                    server.starttls()
+                    server.login(GMAIL_ADDRESS, _app_pass)
+                    server.sendmail(GMAIL_ADDRESS, to_email, msg.as_string())
+                print(f'[EMAIL OK] {to_email} (STARTTLS 587)')
+            except Exception as e2:
+                print(f'[EMAIL ERROR] {to_email}: SSL={e1} | TLS={e2}')
+
     threading.Thread(target=_send, daemon=True).start()
 
 # ── Email templates ───────────────────────────────────────────────────────────
@@ -171,9 +187,9 @@ def _otp_html(otp, expiry_min=2, is_reset=False):
     <p style="font-size:15px;color:#555;margin:0 0 24px;line-height:1.7;">{sub}<br/>
       ينتهي هذا الرمز خلال <strong style="color:{accent};">{expiry_min} دقيقتين</strong>.
     </p>
-    <div style="background:#f5f3ff;border:2px dashed {accent};border-radius:14px;padding:28px 20px;margin:0 0 24px;">
-      <p style="margin:0 0 14px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#999;">رمز التحقق</p>
-      <table cellpadding="0" cellspacing="0" style="margin:0 auto;"><tr>{digits}</tr></table>
+    <div style="background:#f5f3ff;border:2px dashed {accent};border-radius:14px;padding:28px 20px;margin:0 0 24px;direction:ltr;">
+      <p style="margin:0 0 14px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#999;direction:rtl;">رمز التحقق</p>
+      <table cellpadding="0" cellspacing="0" style="margin:0 auto;direction:ltr;"><tr>{digits}</tr></table>
     </div>
     <div style="background:#fff8e6;border:1px solid #f0c040;border-radius:9px;padding:11px 18px;margin-bottom:24px;">
       <p style="margin:0;font-size:12px;color:#a07820;">⏰ لا تشارك هذا الرمز مع أي شخص.</p>
